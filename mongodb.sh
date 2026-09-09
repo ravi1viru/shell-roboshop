@@ -50,7 +50,7 @@ then
     exit 1
 else
     echo -e "${G}${BOLD}SUCCESS:${N} Running with root user" | tee -a "$LOG_FILE"
-
+fi
 VALIDATE() {
 
     if [ "$1" -eq 0 ]
