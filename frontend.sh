@@ -1,182 +1,66 @@
-```bash
 #!/bin/bash
 
-# ==============================
-# USER ID
-# ==============================
-
 USERID=$(id -u)
-
-
-# ==============================
-# COLORS
-# ==============================
-
-R="\e[31m"       # Red
-G="\e[32m"       # Green
-Y="\e[33m"       # Yellow
-N="\e[0m"        # Reset
-BOLD="\e[1m"
-
-
-# ==============================
-# LOG CONFIGURATION
-# ==============================
-
+R="\e[31m"
+G="\e[32m"
+Y="\e[33m"
+N="\e[0m"
 LOGS_FOLDER="/var/log/roboshop-logs"
-
-SCRIPT_NAME=$(basename "$0" .sh)
-
+SCRIPT_NAME=$(echo $0 | cut -d "." -f1)
 LOG_FILE="$LOGS_FOLDER/$SCRIPT_NAME.log"
+SCRIPT_DIR=$PWD
 
-SCRIPT_DIR="$PWD"
+mkdir -p $LOGS_FOLDER
+echo "Script started executing at: $(date)" | tee -a $LOG_FILE
 
-
-# ==============================
-# CREATE LOG DIRECTORY
-# ==============================
-
-mkdir -p "$LOGS_FOLDER"
-
-echo "Script started executing at: $(date)" | tee -a "$LOG_FILE"
-
-
-# ==============================
-# CHECK ROOT USER
-# ==============================
-
-if [ "$USERID" -ne 0 ]
+# check the user has root priveleges or not
+if [ $USERID -ne 0 ]
 then
-    echo -e "${R}${BOLD}ERROR:${N} Please run this script with root access" | tee -a "$LOG_FILE"
-    exit 1
+    echo -e "$R ERROR:: Please run this script with root access $N" | tee -a $LOG_FILE
+    exit 1 #give other than 0 upto 127
 else
-    echo -e "${G}${BOLD}SUCCESS:${N} You are running with root access" | tee -a "$LOG_FILE"
+    echo "You are running with root access" | tee -a $LOG_FILE
 fi
 
-
-# ==============================
-# VALIDATE FUNCTION
-# ==============================
-
-VALIDATE() {
-
-    if [ "$1" -eq 0 ]
+# validate functions takes input as exit status, what command they tried to install
+VALIDATE(){
+    if [ $1 -eq 0 ]
     then
-        echo -e "$2 is ... ${G}SUCCESS${N}" | tee -a "$LOG_FILE"
+        echo -e "$2 is ... $G SUCCESS $N" | tee -a $LOG_FILE
     else
-        echo -e "$2 is ... ${R}FAILURE${N}" | tee -a "$LOG_FILE"
+        echo -e "$2 is ... $R FAILURE $N" | tee -a $LOG_FILE
         exit 1
     fi
-
 }
 
-
-# ==============================
-# DISABLE DEFAULT NGINX MODULE
-# ==============================
-
-dnf module disable nginx -y &>> "$LOG_FILE"
+dnf module disable nginx -y &>>$LOG_FILE
 VALIDATE $? "Disabling Default Nginx"
 
-
-# ==============================
-# ENABLE NGINX 1.24
-# ==============================
-
-dnf module enable nginx:1.24 -y &>> "$LOG_FILE"
+dnf module enable nginx:1.24 -y &>>$LOG_FILE
 VALIDATE $? "Enabling Nginx:1.24"
 
-
-# ==============================
-# INSTALL NGINX
-# ==============================
-
-dnf install nginx -y &>> "$LOG_FILE"
+dnf install nginx -y &>>$LOG_FILE
 VALIDATE $? "Installing Nginx"
 
-
-# ==============================
-# ENABLE NGINX SERVICE
-# ==============================
-
-systemctl enable nginx &>> "$LOG_FILE"
-VALIDATE $? "Enabling Nginx"
-
-
-# ==============================
-# START NGINX
-# ==============================
-
-systemctl start nginx &>> "$LOG_FILE"
+systemctl enable nginx  &>>$LOG_FILE
+systemctl start nginx 
 VALIDATE $? "Starting Nginx"
 
-
-# ==============================
-# REMOVE DEFAULT WEBSITE CONTENT
-# ==============================
-
-rm -rf /usr/share/nginx/html/* &>> "$LOG_FILE"
+rm -rf /usr/share/nginx/html/* &>>$LOG_FILE
 VALIDATE $? "Removing default content"
 
-
-# ==============================
-# DOWNLOAD FRONTEND
-# ==============================
-
-curl -o /tmp/frontend.zip \
-https://roboshop-artifacts.s3.amazonaws.com/frontend-v3.zip \
-&>> "$LOG_FILE"
-
+curl -o /tmp/frontend.zip https://roboshop-artifacts.s3.amazonaws.com/frontend-v3.zip &>>$LOG_FILE
 VALIDATE $? "Downloading frontend"
 
+cd /usr/share/nginx/html 
+unzip /tmp/frontend.zip &>>$LOG_FILE
+VALIDATE $? "unzipping frontend"
 
-# ==============================
-# EXTRACT FRONTEND
-# ==============================
+rm -rf /etc/nginx/nginx.conf &>>$LOG_FILE
+VALIDATE $? "Remove default nginx conf"
 
-cd /usr/share/nginx/html || exit 1
-
-unzip /tmp/frontend.zip &>> "$LOG_FILE"
-VALIDATE $? "Unzipping frontend"
-
-
-# ==============================
-# REMOVE DEFAULT NGINX CONFIG
-# ==============================
-
-rm -f /etc/nginx/nginx.conf &>> "$LOG_FILE"
-VALIDATE $? "Removing default nginx.conf"
-
-
-# ==============================
-# COPY ROBOSHOP NGINX CONFIG
-# ==============================
-
-cp "$SCRIPT_DIR/nginx.conf" /etc/nginx/nginx.conf &>> "$LOG_FILE"
+cp $SCRIPT_DIR/nginx.conf /etc/nginx/nginx.conf
 VALIDATE $? "Copying nginx.conf"
 
-
-# ==============================
-# TEST NGINX CONFIGURATION
-# ==============================
-
-nginx -t &>> "$LOG_FILE"
-VALIDATE $? "Testing Nginx configuration"
-
-
-# ==============================
-# RESTART NGINX
-# ==============================
-
-systemctl restart nginx &>> "$LOG_FILE"
-VALIDATE $? "Restarting Nginx"
-
-
-# ==============================
-# COMPLETED
-# ==============================
-
-echo -e "${G}${BOLD}SUCCESS:${N} Frontend setup completed successfully" | tee -a "$LOG_FILE"
-
-echo "Script completed executing at: $(date)" | tee -a "$LOG_FILE"
-```
+systemctl restart nginx 
+VALIDATE $? "Restarting nginx"
