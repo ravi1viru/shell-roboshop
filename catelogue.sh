@@ -46,8 +46,16 @@ VALIDATE $? "enable nodejs 20 version"
 dnf install nodejs -y
 VALIDATE $? "install nodejs 20 version"
 
+id roboshop
+if [ $? -ne 0 ]
+then
+
 useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop
 VALIDATE $? " create a systeam user roboshop"
+
+else
+    echo -e "System user roboshop already created ... $Y SKIPPING $N"
+fi
 
 mkdir /app 
 VALIDATE $? " create app directory"
