@@ -13,6 +13,7 @@ N="\e[0m"
 LOG_FOLDER="/var/log/roboshop-logs"
 SCRIPT_NAME=$(echo $0 | cut -d "." -f1)
 LOG_FILE="$LOG_FOLDER/$SCRIPT_NAME.log"
+SCRIPT_DIR=$PWD
 
 mkdir -p $LOG_FOLDER
 echo " script starting date: $(date) " | tee -a $LOG_FILE
@@ -62,7 +63,7 @@ cd /app
 npm install 
 VALIDATE $? " install dependncies"
 
-cp catalogue.service /etc/systemd/system/catalogue.service
+cp $SCRIPT_DIR=$PWD/catalogue.service /etc/systemd/system/catalogue.service
 VALIDATE $? " copy catalogue servives"
 
 systemctl daemon-reload
