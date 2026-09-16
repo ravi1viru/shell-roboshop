@@ -5,15 +5,7 @@ SG_ID="sg-01ce89f25ab5c2e0b"
 
 INSTANCES=(
   "mongodb"
-  "redis"
-  "mysql"
-  "rabbitmq"
   "catalogue"
-  "user"
-  "cart"
-  "shipping"
-  "payment"
-  "dispatch"
   "frontend"
 )
 
