@@ -1,82 +1,52 @@
 #!/bin/bash
 
-# ==============================
-# COLORS
-# ==============================
 
-R="\e[31m"       # Red
-G="\e[32m"       # Green
-Y="\e[33m"       # Yellow
-B="\e[34m"       # Blue
-C="\e[36m"       # Cyan
-N="\e[0m"        # Reset
-BOLD="\e[1m"
+USERID=$(id u)
+R="\e[31m"
+G="\e[32m"
+Y="\e[33m"
+N="\e[0m"
 
-
-# ==============================
-# LOG CONFIGURATION
-# ==============================
-
-LOG_FOLDER="/var/log/shell-practice"
-
-SCRIPT_NAME=$(basename "$0" .sh)
-
+LOG_FOLDER="/var/log/roboshop-logs"
+SCRIPT_NAME=$(echo $0 | cut -d "." -f1)
 LOG_FILE="$LOG_FOLDER/$SCRIPT_NAME.log"
 
+mkdir -p $LOG_FOLDER
+echo " script starting date: $(date) " | tee -a $LOG_FILE
 
-# ==============================
-# PACKAGES
-# ==============================
-
-PACKAGES=("nginx" "mysql" "python3")
-
-
-# ==============================
-# CREATE LOG DIRECTORY
-# ==============================
-
-mkdir -p "$LOG_FOLDER"
-
-
-# ==============================
-# CHECK ROOT USER
-# ==============================
-
-USERID=$(id -u)
-
-if [ "$USERID" -ne 0 ]
-then
-    echo -e "${R}${BOLD}ERROR:${N} Please run this script with root user"
-    exit 1
-else
-    echo -e "${G}${BOLD}SUCCESS:${N} Running with root user" | tee -a "$LOG_FILE"
-fi
-VALIDATE() {
-
-    if [ "$1" -eq 0 ]
+if [ $USERID -ne 0 ]
     then
-        echo -e "${G}${BOLD}SUCCESS:${N} $2 installation completed" | tee -a "$LOG_FILE"
+         echo -e "$R Error: please run the script with root user $N" | tee -a $LOG_FILE
+         exit 1
     else
-        echo -e "${R}${BOLD}FAILURE:${N} $2 installation failed" | tee -a "$LOG_FILE"
-    fi
+         echo " You are running with root access" 
+fi
 
+VALIDATE(){
+
+    if [ $1 -eq 0 ]
+       then 
+           echo -e " $2 is .... $G SUCCESS $N" | tee -a $LOG_FILE
+       else
+           echo " $2 IS ... $R FAILURE $N" | tee -a $LOG_FILE
+           exit 1
+    fi
 }
 
-cp mongodb.repo /etc/yum.repos.d/mongo.repo &>>$LOG_FILE
-VALIDATE $? "Copying MongoDB repo"
+cp mongodb.repo /etc/yum.repos.d/mongo.repo
+VALIDATE $? "copig mangodb repo" 
 
-dnf install mongodb-org -y &>>$LOG_FILE
-VALIDATE "$?" "mongodb"
+dnf install mongodb-org -y &>>$LOG_FILE 
+VALIDATE $? "install mongodb"
 
-systemctl enable mongod &>>$LOG_FILE
-VALIDATE "$?" "mongodb enable"
+systemctl enable mongod  &>>$LOG_FILE
+VALIDATE $? "enable mongodb"
 
 systemctl start mongod &>>$LOG_FILE
-VALIDATE "$?" "mongodb start"
+VALIDATE $? "start mongodb"
 
-sed -i -e 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
-VALIDATE $? "Editing MongoDB conf file for remote connections"
-
+sed -i '/s/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
+VALIDATE $? "give access to all local ports"
 
 systemctl restart mongod &>>$LOG_FILE
-VALIDATE $? "Restarting MongoDB"
+VALIDATE $? "restart mongodb"
