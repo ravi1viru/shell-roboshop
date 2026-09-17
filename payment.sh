@@ -56,7 +56,7 @@ cd /app
 pip3 install -r requirements.txt
 VALIDATE $? "install dependencies"
 
-cp $SCRIPT_DIR/paymet.service /etc/systemd/system/payment.service
+cp $SCRIPT_DIR/payment.service /etc/systemd/system/payment.service
 VALIDATE $? "copy system services"
 
 systemctl daemon-reload
