@@ -59,7 +59,7 @@ VALIDATE $? "Extract cart application code"
 npm install &>> "$LOG_FILE"
 VALIDATE $? "Install dependencies"
 
-cp "$SCRIPT_DIR/cart.services" /etc/systemd/system/cart.service &>> "$LOG_FILE"
+cp "$SCRIPT_DIR/cart.service" /etc/systemd/system/cart.service &>> "$LOG_FILE"
 VALIDATE $? "Copy cart service unit file"
 
 systemctl daemon-reload &>> "$LOG_FILE" && \
