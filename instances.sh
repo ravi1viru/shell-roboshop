@@ -3,7 +3,7 @@
 AMI_ID="ami-0220d79f3f480ecf5"
 SG_ID="sg-01ce89f25ab5c2e0b"
 
-INSTANCES= ("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipping" "payment" "dispatch" "frontend")
+INSTANCES=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "user" "cart" "shipping" "payment" "dispatch" "frontend")
 
 ZONE_ID="Z0377755DD1CAPN8AAET"
 DOMAIN_NAME="leardevops.online"
