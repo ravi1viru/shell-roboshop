@@ -7,67 +7,62 @@ Y="\e[33m"
 N="\e[0m"
 
 LOG_FOLDER="/var/log/roboshop-logs"
-SCRIPT_NAME=$(echo $0 | cut -d "." -f1)
+SCRIPT_NAME=$(basename "$0" .sh)
 LOG_FILE="$LOG_FOLDER/$SCRIPT_NAME.log"
 SCRIPT_DIR=$PWD
 
-mkdir -p $LOG_FOLDER
-echo " script starting date: $(date) " | tee -a $LOG_FILE
+mkdir -p "$LOG_FOLDER"
+echo "Script starting date: $(date)" | tee -a "$LOG_FILE"
 
-if [ $USERID -ne 0 ]
-    then
-         echo -e "$R Error: please run the script with root user $N" | tee -a $LOG_FILE
-         exit 1
-    else
-         echo " You are running with root access" 
+if [ $USERID -ne 0 ]; then
+    echo -e "$R Error: Please run the script with root user $N" | tee -a "$LOG_FILE"
+    exit 1
+else
+    echo "You are running with root access" | tee -a "$LOG_FILE"
 fi
 
 VALIDATE(){
-
-    if [ $1 -eq 0 ]
-       then 
-           echo -e " $2 is .... $G SUCCESS $N" | tee -a $LOG_FILE
-       else
-           echo " $2 IS ... $R FAILURE $N" | tee -a $LOG_FILE
-           exit 1
+    if [ $1 -eq 0 ]; then 
+        echo -e "$2 ... $G SUCCESS $N" | tee -a "$LOG_FILE"
+    else
+        echo -e "$2 ... $R FAILURE $N" | tee -a "$LOG_FILE"
+        exit 1
     fi
 }
 
-dnf module disable nodejs -y
-VALIDATE $? "disable nodejs"
+dnf module disable nodejs -y &>> "$LOG_FILE"
+VALIDATE $? "Disable default Node.js module"
 
-dnf module enable nodejs:20 -y
-VALIDATE $? "enable nodejs"
+dnf module enable nodejs:20 -y &>> "$LOG_FILE"
+VALIDATE $? "Enable Node.js 20 module"
 
-dnf install nodejs -y
-VALIDATE $? "install nodejs"
+dnf install nodejs -y &>> "$LOG_FILE"
+VALIDATE $? "Install Node.js"
 
-
-id roboshop
-if [ $? -ne 0 ]
-   then 
-        useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop
-        echo " create a robosho user" 
-    else
-         echo "user already add SKIPPED"
+id roboshop &>> "$LOG_FILE"
+if [ $? -ne 0 ]; then 
+    useradd --system --home /app --shell /sbin/nologin --comment "roboshop system user" roboshop &>> "$LOG_FILE"
+    VALIDATE $? "Create roboshop user"
+else
+    echo "User roboshop already exists ... SKIPPED" | tee -a "$LOG_FILE"
 fi
 
 mkdir -p /app
-VALIDATE $? "make the app directory"
+VALIDATE $? "Create /app directory"
 
-curl -L -o /tmp/user.zip https://roboshop-artifacts.s3.amazonaws.com/user-v3.zip 
+rm -rf /app/*
+curl -L -o /tmp/user.zip https://roboshop-artifacts.s3.amazonaws.com/user-v3.zip &>> "$LOG_FILE"
 cd /app 
-unzip /tmp/user.zip
-VALIDATE $? "unzip the code"
+unzip -o /tmp/user.zip &>> "$LOG_FILE"
+VALIDATE $? "Extract application archive"
 
-cd /app 
-npm install 
-VALIDATE $? "install dependiences"
+npm install &>> "$LOG_FILE"
+VALIDATE $? "Install dependencies"
 
-cp $SCRIPT_DIR/user.service /etc/systemd/system/user.service
-VALIDATE $? "copy user service"
+cp "$SCRIPT_DIR/user.service" /etc/systemd/system/user.service &>> "$LOG_FILE"
+VALIDATE $? "Copy user service file"
 
-systemctl daemon-reload
-systemctl enable user 
-systemctl start user
-VALIDATE $? "start user service"
+systemctl daemon-reload &>> "$LOG_FILE" && \
+systemctl enable user &>> "$LOG_FILE" && \
+systemctl restart user &>> "$LOG_FILE"
+VALIDATE $? "Start and enable user service"
